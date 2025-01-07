@@ -68,18 +68,98 @@ def get_news():
 @app.route('/')
 def home():
     return '''
-    <html>
+    <!DOCTYPE html>
+    <html lang="zh-CN">
         <head>
-            <title>酒店新闻API</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>酒店新闻聚合</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
             <style>
-                body { font-family: Arial, sans-serif; margin: 40px; }
-                code { background: #f4f4f4; padding: 2px 5px; }
+                .news-container {
+                    white-space: pre-wrap;
+                    font-family: 'Microsoft YaHei', sans-serif;
+                }
+                .loading {
+                    display: none;
+                }
+                .btn-group {
+                    margin: 20px 0;
+                }
             </style>
         </head>
         <body>
-            <h1>酒店新闻API使用说明</h1>
-            <p>获取早报：<code>GET /api/news?type=morning</code></p>
-            <p>获取晚报：<code>GET /api/news?type=evening</code></p>
+            <div class="container py-4">
+                <h1 class="text-center mb-4">酒店新闻聚合</h1>
+                
+                <div class="btn-group d-flex justify-content-center" role="group">
+                    <button type="button" class="btn btn-primary mx-2" onclick="getNews('morning')">获取早报</button>
+                    <button type="button" class="btn btn-primary mx-2" onclick="getNews('evening')">获取晚报</button>
+                    <button type="button" class="btn btn-secondary mx-2" onclick="copyNews()">复制内容</button>
+                </div>
+
+                <div class="loading text-center my-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>正在获取新闻...</p>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div id="newsContent" class="news-container"></div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <p>API 接口：</p>
+                    <code>GET /api/news?type=morning</code> - 获取早报<br>
+                    <code>GET /api/news?type=evening</code> - 获取晚报
+                </div>
+            </div>
+
+            <script>
+                async function getNews(type) {
+                    const newsContent = document.getElementById('newsContent');
+                    const loading = document.querySelector('.loading');
+                    
+                    try {
+                        loading.style.display = 'block';
+                        newsContent.innerHTML = '';
+                        
+                        const response = await fetch(`/api/news?type=${type}`);
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            newsContent.innerHTML = data.data;
+                        } else {
+                            newsContent.innerHTML = '获取新闻失败：' + data.error;
+                        }
+                    } catch (error) {
+                        newsContent.innerHTML = '获取新闻失败：' + error.message;
+                    } finally {
+                        loading.style.display = 'none';
+                    }
+                }
+
+                function copyNews() {
+                    const newsContent = document.getElementById('newsContent');
+                    const text = newsContent.innerText;
+                    
+                    if (!text) {
+                        alert('没有可复制的内容');
+                        return;
+                    }
+                    
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert('内容已复制到剪贴板');
+                    }).catch(err => {
+                        alert('复制失败：' + err);
+                    });
+                }
+            </script>
+            
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
         </body>
     </html>
     '''
