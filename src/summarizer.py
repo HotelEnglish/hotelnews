@@ -2,21 +2,32 @@ from openai import OpenAI
 from datetime import datetime
 import pytz
 import os
+from dotenv import load_dotenv
 
 class NewsSummarizer:
     def __init__(self):
-        # 设置 API 基础 URL 和密钥
-        self.base_url = "https://api.xi-ai.cn/v1"
-        self.api_key = "sk-ELEVTsylkeIO7mJU920a7d17A29541E88a5903BbF1D7118b"
+        # 加载环境变量
+        load_dotenv()
+        
+        # 从环境变量获取配置
+        self.base_url = os.getenv('OPENAI_BASE_URL')
+        self.api_key = os.getenv('OPENAI_API_KEY')
+        
+        if not self.api_key or not self.base_url:
+            raise ValueError("Missing required environment variables: OPENAI_API_KEY or OPENAI_BASE_URL")
         
         # 初始化 OpenAI 客户端
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url,
-            default_headers={
-                "Content-Type": "application/json"
-            }
-        )
+        try:
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                default_headers={
+                    "Content-Type": "application/json"
+                }
+            )
+        except Exception as e:
+            print(f"Error initializing OpenAI client: {e}")
+            raise
 
     def summarize_news(self, news_items):
         """使用GPT-4对新闻进行摘要"""
