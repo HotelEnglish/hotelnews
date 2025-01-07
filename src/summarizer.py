@@ -12,7 +12,10 @@ class NewsSummarizer:
         # 初始化 OpenAI 客户端
         self.client = OpenAI(
             api_key=self.api_key,
-            base_url=self.base_url
+            base_url=self.base_url,
+            default_headers={
+                "Content-Type": "application/json"
+            }
         )
 
     def summarize_news(self, news_items):
