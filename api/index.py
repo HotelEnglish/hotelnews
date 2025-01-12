@@ -56,14 +56,51 @@ class NewsAggregator:
 @app.route('/api/news', methods=['GET'])
 def get_news():
     try:
-        aggregator = NewsAggregator()
-        summary = aggregator.get_news_summary()
+        # 获取所有新闻
+        news_items = []
+        
+        # 从迈点网获取新闻
+        try:
+            meadin_scraper = MeadinScraper()
+            meadin_news = meadin_scraper.get_news()
+            if meadin_news:
+                news_items.extend(meadin_news)
+        except Exception as e:
+            print(f"Error getting news from Meadin: {e}")
+        
+        # 从环球旅讯获取新闻
+        try:
+            traveldaily_scraper = TravelDailyScraper()
+            traveldaily_news = traveldaily_scraper.get_news()
+            if traveldaily_news:
+                news_items.extend(traveldaily_news)
+        except Exception as e:
+            print(f"Error getting news from TravelDaily: {e}")
+        
+        if not news_items:
+            return jsonify({
+                'success': True,
+                'data': "暂无相关新闻"
+            })
+        
+        # 过滤和格式化新闻
+        processor = NewsProcessor()
+        filtered_news = processor.filter_news(news_items)
+        formatted_news = processor.format_news_report(filtered_news)
+        
+        if not formatted_news:
+            return jsonify({
+                'success': True,
+                'data': "暂无相关新闻"
+            })
             
         return jsonify({
             'success': True,
-            'data': summary
+            'data': formatted_news
         })
+        
     except Exception as e:
+        print(f"Error in get_news: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -174,16 +211,19 @@ def home():
                             const data = await response.json();
                             
                             if (data.success) {
-                                // 将 Markdown 格式转换为 HTML
                                 let content = data.data;
-                                content = content
-                                    .replace(/# ([^\\n]*)/g, '<h1 class="mb-4">$1</h1>')
-                                    .replace(/(\\d+)\\. ([^\\n]*)/g, '<h3 class="mt-4">$1. $2</h3>')
-                                    .replace(/\\[原文链接\\]\\(([^)]+)\\)/g, '<a href="$1" target="_blank" class="text-primary">原文链接</a>')
-                                    .replace(/^-{4,}/gm, '<hr class="my-4">')
-                                    .split('\\n\\n').join('<br><br>');
-                                
-                                newsContent.innerHTML = content;
+                                if (content === "暂无相关新闻") {
+                                    newsContent.innerHTML = '<div class="alert alert-info">暂无相关新闻</div>';
+                                } else {
+                                    content = content
+                                        .replace(/# ([^\n]*)/g, '<h1 class="mb-4">$1</h1>')
+                                        .replace(/(\d+)\. ([^\n]*)/g, '<h3 class="mt-4">$1. $2</h3>')
+                                        .replace(/\[原文链接\]\(([^)]+)\)/g, '<a href="$1" target="_blank" class="text-primary">原文链接</a>')
+                                        .replace(/^-{4,}/gm, '<hr class="my-4">')
+                                        .replace(/\n\n/g, '<br><br>');
+                                    
+                                    newsContent.innerHTML = content;
+                                }
                             } else {
                                 newsContent.innerHTML = '<div class="alert alert-danger">获取新闻失败：' + data.error + '</div>';
                             }
@@ -196,8 +236,7 @@ def home():
 
                     function copyNews() {
                         const text = newsContent.innerText;
-                        
-                        if (!text) {
+                        if (!text || text === '暂无相关新闻') {
                             alert('没有可复制的内容');
                             return;
                         }
@@ -209,11 +248,8 @@ def home():
                         });
                     }
 
-                    // 添加事件监听器
                     getNewsBtn.addEventListener('click', getNews);
                     copyNewsBtn.addEventListener('click', copyNews);
-
-                    // 页面加载时自动获取新闻
                     getNews();
                 });
             </script>
