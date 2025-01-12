@@ -79,6 +79,7 @@ def home():
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>酒店新闻聚合</title>
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
             <style>
                 body {
                     background-color: #f8f9fa;
@@ -128,10 +129,10 @@ def home():
                 
                 <div class="d-flex justify-content-center mb-4">
                     <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-primary mx-2" onclick="getNews()">
+                        <button type="button" class="btn btn-primary mx-2" id="getNewsBtn">
                             <i class="fas fa-sync-alt"></i> 获取最新资讯
                         </button>
-                        <button type="button" class="btn btn-secondary mx-2" onclick="copyNews()">
+                        <button type="button" class="btn btn-secondary mx-2" id="copyNewsBtn">
                             <i class="fas fa-copy"></i> 复制内容
                         </button>
                     </div>
@@ -158,56 +159,66 @@ def home():
             </div>
 
             <script>
-                async function getNews() {
+                document.addEventListener('DOMContentLoaded', function() {
                     const newsContent = document.getElementById('newsContent');
                     const loading = document.querySelector('.loading');
-                    
-                    try {
-                        loading.style.display = 'block';
-                        newsContent.innerHTML = '';
-                        
-                        const response = await fetch('/api/news');
-                        const data = await response.json();
-                        
-                        if (data.success) {
-                            // 将 Markdown 格式转换为 HTML
-                            let content = data.data
-                                .replace(/^# (.*$)/gm, '<h1 class="mb-4">$1</h1>')
-                                .replace(/^(\d+)\. (.*$)/gm, '<h3 class="mt-4">$1. $2</h3>')
-                                .replace(/\[原文链接\]\((.*?)\)/g, '<a href="$1" target="_blank" class="text-primary">原文链接</a>')
-                                .replace(/^-{4,}/gm, '<hr class="my-4">')
-                                .replace(/\n\n/g, '<br><br>');
-                            
-                            newsContent.innerHTML = content;
-                        } else {
-                            newsContent.innerHTML = '<div class="alert alert-danger">获取新闻失败：' + data.error + '</div>';
-                        }
-                    } catch (error) {
-                        newsContent.innerHTML = '<div class="alert alert-danger">获取新闻失败：' + error.message + '</div>';
-                    } finally {
-                        loading.style.display = 'none';
-                    }
-                }
+                    const getNewsBtn = document.getElementById('getNewsBtn');
+                    const copyNewsBtn = document.getElementById('copyNewsBtn');
 
-                function copyNews() {
-                    const newsContent = document.getElementById('newsContent');
-                    const text = newsContent.innerText;
-                    
-                    if (!text) {
-                        alert('没有可复制的内容');
-                        return;
+                    async function getNews() {
+                        try {
+                            loading.style.display = 'block';
+                            newsContent.innerHTML = '';
+                            
+                            const response = await fetch('/api/news');
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                // 将 Markdown 格式转换为 HTML
+                                let content = data.data;
+                                content = content
+                                    .replace(/# ([^\\n]*)/g, '<h1 class="mb-4">$1</h1>')
+                                    .replace(/(\\d+)\\. ([^\\n]*)/g, '<h3 class="mt-4">$1. $2</h3>')
+                                    .replace(/\\[原文链接\\]\\(([^)]+)\\)/g, '<a href="$1" target="_blank" class="text-primary">原文链接</a>')
+                                    .replace(/^-{4,}/gm, '<hr class="my-4">')
+                                    .split('\\n\\n').join('<br><br>');
+                                
+                                newsContent.innerHTML = content;
+                            } else {
+                                newsContent.innerHTML = '<div class="alert alert-danger">获取新闻失败：' + data.error + '</div>';
+                            }
+                        } catch (error) {
+                            newsContent.innerHTML = '<div class="alert alert-danger">获取新闻失败：' + error.message + '</div>';
+                        } finally {
+                            loading.style.display = 'none';
+                        }
                     }
-                    
-                    navigator.clipboard.writeText(text).then(() => {
-                        alert('内容已复制到剪贴板');
-                    }).catch(err => {
-                        alert('复制失败：' + err);
-                    });
-                }
+
+                    function copyNews() {
+                        const text = newsContent.innerText;
+                        
+                        if (!text) {
+                            alert('没有可复制的内容');
+                            return;
+                        }
+                        
+                        navigator.clipboard.writeText(text).then(() => {
+                            alert('内容已复制到剪贴板');
+                        }).catch(err => {
+                            alert('复制失败：' + err);
+                        });
+                    }
+
+                    // 添加事件监听器
+                    getNewsBtn.addEventListener('click', getNews);
+                    copyNewsBtn.addEventListener('click', copyNews);
+
+                    // 页面加载时自动获取新闻
+                    getNews();
+                });
             </script>
             
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-            <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
         </body>
     </html>
     '''
