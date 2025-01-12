@@ -216,11 +216,12 @@ def home():
                                     newsContent.innerHTML = '<div class="alert alert-info">暂无相关新闻</div>';
                                 } else {
                                     content = content
-                                        .replace(/# ([^\n]*)/g, '<h1 class="mb-4">$1</h1>')
-                                        .replace(/(\d+)\. ([^\n]*)/g, '<h3 class="mt-4">$1. $2</h3>')
-                                        .replace(/\[原文链接\]\(([^)]+)\)/g, '<a href="$1" target="_blank" class="text-primary">原文链接</a>')
-                                        .replace(/^-{4,}/gm, '<hr class="my-4">')
-                                        .replace(/\n\n/g, '<br><br>');
+                                        .split('# ').join('<h1 class="mb-4">')
+                                        .split('\n').join('<br>')
+                                        .replace(/(\d+)\. /g, '<h3 class="mt-4">$1. ')
+                                        .replace(/\[原文链接\]/g, '<a href="')
+                                        .replace(/\)/g, '" target="_blank" class="text-primary">原文链接</a>')
+                                        .replace(/------/g, '<hr class="my-4">');
                                     
                                     newsContent.innerHTML = content;
                                 }
